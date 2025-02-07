@@ -21,8 +21,9 @@ WORKDIR /app
 COPY --from=go-builder /app/main .
 COPY --from=go-builder /app/views ./views
 COPY --from=go-builder /app/static ./static
-COPY .env ./.env
 
+# Instalar certificados para conexiones SSL
 RUN apk --no-cache add ca-certificates
+
 EXPOSE 8080
 CMD ["./main"]
