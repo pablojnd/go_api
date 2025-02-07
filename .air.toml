@@ -1,0 +1,21 @@
+### Hot Reload con Air
+
+1. Instala Air de forma global siguiendo las instrucciones del repositorio:  
+   Ejecuta:  
+   go install github.com/cosmtrek/air@latest
+
+2. Crea un archivo de configuración .air.toml en la raíz del proyecto (opcional, los valores por defecto suelen funcionar):
+
+# Configuración mínima para Air
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o tmp/main ."
+  bin = "tmp/main"
+  include_ext = ["go"]
+  exclude_dir = ["vendor", "tmp"]
+
+[color]
+  main = "yellow"
+  watcher = "cyan"

@@ -1,0 +1,54 @@
+# Binarios compilados
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+go_api
+
+# Archivos de prueba
+*.test
+
+# Archivos de cobertura
+*.out
+
+# Archivos de dependencias
+/vendor/
+
+# Archivos de IDE y editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Archivos de entorno
+.env
+.env.local
+
+# Archivos temporales
+tmp/
+temp/
+
+# Archivos de log
+*.log
+
+# Archivos de base de datos
+*.db
+*.sqlite
+
+# Directorio de builds
+/build/
+/dist/
+/bin/
+
+# Archivos específicos de Node.js (para Tailwind)
+node_modules/
+package-lock.json
+
+# Archivos generados por Tailwind
+/static/css/tailwind.css
+
+# Otros archivos que no deberían versionarse
+.DS_Store
+Thumbs.db
