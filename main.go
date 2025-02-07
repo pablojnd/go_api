@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"go_api/db"
 	"go_api/routes"
 	"log"
@@ -24,8 +23,14 @@ func main() {
 	}
 	defer db.SQLServerDB.Close()
 
+	// Construir el DSN para MySQL usando variables de entorno
+	mysqlDSN := os.Getenv("MYSQL_USER") + ":" +
+		os.Getenv("MYSQL_PASSWORD") + "@tcp(" +
+		os.Getenv("MYSQL_HOST") + ")/" +
+		os.Getenv("MYSQL_DATABASE")
+
 	// Inicializar la conexión a MySQL
-	if err := db.InitMySQL(); err != nil {
+	if err := db.InitMySQL(mysqlDSN); err != nil {
 		log.Printf("Error al inicializar MySQL: %v", err)
 		return
 	}
