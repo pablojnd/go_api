@@ -1,6 +1,6 @@
 module go_api
 
-go 1.23.5
+go 1.21
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
