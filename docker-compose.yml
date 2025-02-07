@@ -2,16 +2,13 @@ version: '3.8'
 
 services:
   app:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "${PORT}:8080"  # Usa la variable PORT del archivo .env
-    environment:
-      PORT: ${PORT}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_HOST: ${MYSQL_HOST}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      SQLSERVER_CONNECTION_STRING: ${SQLSERVER_CONNECTION_STRING}
+      - "${PORT:-8081}:8080"
+    env_file:
+      - .env
     networks:
       - app-network
     volumes:

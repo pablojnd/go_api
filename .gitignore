@@ -25,6 +25,13 @@ go_api
 # Archivos de entorno
 .env
 .env.local
+.env.*.local
+.env.development
+.env.test
+.env.production
+
+# Keep example env file
+!.env.example
 
 # Archivos temporales
 tmp/
