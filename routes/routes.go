@@ -6,6 +6,10 @@ import (
 )
 
 func SetupRoutes() {
+	// Servir archivos estáticos
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
 	// Ruta principal
 	http.HandleFunc("/", controllers.IndexHandler)
 	// Registrar rutas de API y vistas

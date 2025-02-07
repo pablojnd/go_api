@@ -4,16 +4,17 @@
   "main": "tailwind.config.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "watch:css": "tailwindcss -i ./static/css/styles.css -o ./static/css/tailwind.css --watch",
-    "build:css": "tailwindcss -i ./static/css/styles.css -o ./static/css/tailwind.css --minify"
+    "watch:css": "npx tailwindcss -i ./static/css/styles.css -o ./static/css/tailwind.css --watch",
+    "build:css": "npx tailwindcss -i ./static/css/styles.css -o ./static/css/tailwind.css --minify",
+    "build": "npm run build:css"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "autoprefixer": "^10.4.20",
-    "postcss": "^8.5.1",
-    "tailwindcss": "^3.4.17"
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1"
   },
-  "description": ""
+  "description": "API de Saldos con Tailwind CSS"
 }

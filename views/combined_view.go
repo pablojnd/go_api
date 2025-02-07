@@ -24,6 +24,12 @@ var combinedTemplate = `
                         placeholder="Buscar..."
                         class="px-4 py-2 border rounded-lg">
                     
+                    <select name="year" class="ml-4 px-4 py-2 border rounded-lg">
+                        <option value="2024" {{if eq .Year "2024"}}selected{{end}}>2024</option>
+                        <option value="2025" {{if eq .Year "2025"}}selected{{end}}>2025</option>
+                        <option value="2026" {{if eq .Year "2026"}}selected{{end}}>2026</option>
+                    </select>
+
                     <select name="pageSize" class="ml-4 px-4 py-2 border rounded-lg">
                         <option value="10" {{if eq .PageSize 10}}selected{{end}}>10 por página</option>
                         <option value="25" {{if eq .PageSize 25}}selected{{end}}>25 por página</option>
@@ -36,7 +42,7 @@ var combinedTemplate = `
                 </form>
             </div>
             
-            <a href="/exportCombined{{if .Search}}?search={{.Search}}{{end}}" 
+            <a href="/exportCombined?year={{.Year}}{{if .Search}}&search={{.Search}}{{end}}{{if .SortField}}&sort={{.SortField}}&dir={{.SortDir}}{{end}}" 
                class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
                 Exportar Excel
             </a>
@@ -159,6 +165,7 @@ type CombinedViewData struct {
 	MissingSearch string
 	SortField     string
 	SortDir       string
+	Year          string
 }
 
 func (d CombinedViewData) SortIndicator(field string) string {

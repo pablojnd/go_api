@@ -3,6 +3,7 @@ package controllers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -13,8 +14,9 @@ import (
 	"go_api/models"
 	"go_api/views"
 
-	"github.com/tealeg/xlsx"
 	"sort"
+
+	"github.com/tealeg/xlsx"
 )
 
 // getStocksFromSQLServer obtiene datos de SQL Server.
@@ -54,37 +56,27 @@ func getStocksFromSQLServer(db *sql.DB) ([]models.StockData, error) {
 }
 
 // getSaldosFromMySQL obtiene saldos desde MySQL modificando el escaneo de Fecha_Ingreso.
-func getSaldosFromMySQL(db *sql.DB) ([]models.SaldoData, error) {
+func getSaldosFromMySQL(db *sql.DB, year string) ([]models.SaldoData, error) {
 	query := `
         SELECT 
             COD_ART AS Codigo_Producto,
             ZET_ART AS Zeta,
             ANIO_PRO AS Año_Produccion,
-            MAX(DES_INT) AS Nombre_Producto,
-            MAX(UNI_CAJ) AS Unidad_Caja,
-            MAX(CIF_UNI) AS Costo_CIF,
-            MAX(cos_uni) AS Costo_Real,
-            MAX(FEC_ING) AS Fecha_Ingreso,
-            SUM(CAN_ING) AS Cantidad_Ingresada,
-            MAX(SAL_ANT) AS Saldo_Anterior,
-            DATEDIFF(CURDATE(), MAX(FEC_ING)) AS Dias_Desde_Ingreso,
-            MAX(FIN_ENE) AS Saldo_Fin_Enero,
-            MAX(FIN_FEB) AS Saldo_Fin_Febrero,
-            MAX(FIN_MAR) AS Saldo_Fin_Marzo,
-            MAX(FIN_ABR) AS Saldo_Fin_Abril,
-            MAX(FIN_MAY) AS Saldo_Fin_Mayo,
-            MAX(FIN_JUN) AS Saldo_Fin_Junio,
-            MAX(FIN_JUL) AS Saldo_Fin_Julio,
-            MAX(FIN_AGO) AS Saldo_Fin_Agosto,
-            MAX(FIN_SEP) AS Saldo_Fin_Septiembre,
-            MAX(FIN_OCT) AS Saldo_Fin_Octubre,
-            MAX(FIN_NOV) AS Saldo_Fin_Noviembre,
-            MAX(FIN_DIC) AS Saldo_Fin_Diciembre
-        FROM saldos
-        GROUP BY COD_ART, ZET_ART, ANIO_PRO
-        ORDER BY ANIO_PRO, COD_ART;
+            DES_INT AS Nombre_Producto, 
+            UNI_CAJ AS Unidad_Caja,
+            CIF_UNI AS Costo_CIF,
+            cos_uni AS Costo_Real,
+            MAX(FEC_ING) AS Fecha_Ingreso,    
+            SUM(CAN_ING) AS Cantidad_Ingresada, 
+            MAX(SAL_ANT) AS Saldo_Anterior,   
+            DATEDIFF(CURDATE(), MAX(FEC_ING)) AS Dias_Desde_Ingreso
+        FROM saldos 
+        WHERE ANIO_PRO = ?  
+        GROUP BY COD_ART, ZET_ART, ANIO_PRO, DES_INT, UNI_CAJ, CIF_UNI, cos_uni
+        ORDER BY ANIO_PRO, COD_ART
     `
-	rows, err := db.Query(query)
+
+	rows, err := db.Query(query, year)
 	if err != nil {
 		return nil, err
 	}
@@ -93,17 +85,26 @@ func getSaldosFromMySQL(db *sql.DB) ([]models.SaldoData, error) {
 	var saldos []models.SaldoData
 	for rows.Next() {
 		var s models.SaldoData
-		var fechaIngresoBytes []byte // variable temporal para Fecha_Ingreso
-		var dias sql.NullInt64       // variable temporal para Dias_Desde_Ingreso
-		if err := rows.Scan(&s.CodigoProducto, &s.Zeta, &s.AnioProduccion, &s.NombreProducto,
-			&s.UnidadCaja, &s.CostoCIF, &s.CostoReal, &fechaIngresoBytes,
-			&s.CantidadIngresada, &s.SaldoAnterior, &dias, &s.SaldoFinEnero,
-			&s.SaldoFinFebrero, &s.SaldoFinMarzo, &s.SaldoFinAbril, &s.SaldoFinMayo,
-			&s.SaldoFinJunio, &s.SaldoFinJulio, &s.SaldoFinAgosto, &s.SaldoFinSeptiembre,
-			&s.SaldoFinOctubre, &s.SaldoFinNoviembre, &s.SaldoFinDiciembre); err != nil {
+		var fechaIngresoBytes []byte
+		var dias sql.NullInt64
+		err := rows.Scan(
+			&s.CodigoProducto,
+			&s.Zeta,
+			&s.AnioProduccion,
+			&s.NombreProducto,
+			&s.UnidadCaja,
+			&s.CostoCIF,
+			&s.CostoReal,
+			&fechaIngresoBytes,
+			&s.CantidadIngresada,
+			&s.SaldoAnterior,
+			&dias,
+		)
+		if err != nil {
 			return nil, err
 		}
-		// Convertir el []byte recibido a time.Time
+
+		// Procesar fecha
 		fechaStr := string(fechaIngresoBytes)
 		if fechaStr == "" {
 			s.FechaIngreso = time.Time{}
@@ -116,14 +117,14 @@ func getSaldosFromMySQL(db *sql.DB) ([]models.SaldoData, error) {
 				}
 			}
 		}
-		// Convertir sql.NullInt64 a int
+
 		if dias.Valid {
 			s.DiasDesdeIngreso = int(dias.Int64)
-		} else {
-			s.DiasDesdeIngreso = 0
 		}
+
 		saldos = append(saldos, s)
 	}
+
 	return saldos, nil
 }
 
@@ -202,7 +203,7 @@ func CombinedDataHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println("Conexión a MySQL no inicializada")
 		return
 	}
-	saldos, err := getSaldosFromMySQL(db.MySQLDB)
+	saldos, err := getSaldosFromMySQL(db.MySQLDB, "2025")
 	if err != nil {
 		http.Error(w, "Error obteniendo saldos", http.StatusInternalServerError)
 		log.Println("Error obteniendo saldos:", err)
@@ -241,6 +242,12 @@ func CombinedViewHandler(w http.ResponseWriter, r *http.Request) {
 		sortDir = "asc"
 	}
 
+	// Obtener año de la URL, default 2025
+	year := r.URL.Query().Get("year")
+	if year == "" {
+		year = "2025"
+	}
+
 	// Obtener datos...
 	stocks, err := getStocksFromSQLServer(db.SQLServerDB)
 	if err != nil {
@@ -248,7 +255,8 @@ func CombinedViewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	saldos, err := getSaldosFromMySQL(db.MySQLDB)
+	// Pasar el año a la función getSaldosFromMySQL
+	saldos, err := getSaldosFromMySQL(db.MySQLDB, year)
 	if err != nil {
 		http.Error(w, "Error obteniendo saldos", http.StatusInternalServerError)
 		return
@@ -291,6 +299,7 @@ func CombinedViewHandler(w http.ResponseWriter, r *http.Request) {
 		MissingSearch: missingSearch,
 		SortField:     sortField,
 		SortDir:       sortDir,
+		Year:          year, // Agregar el año a los datos de la vista
 	}
 
 	views.RenderCombined(w, viewData)
@@ -345,12 +354,16 @@ func filterAndSortResults(results []models.CombinedData, search, sortField, sort
 
 // ExportCombinedHandler exporta los datos fusionados de la página solicitada a Excel.
 func ExportCombinedHandler(w http.ResponseWriter, r *http.Request) {
-	// Verificar conexiones
-	if db.SQLServerDB == nil {
-		http.Error(w, "Conexión a SQL Server no inicializada", http.StatusInternalServerError)
-		log.Println("Conexión a SQL Server no inicializada")
-		return
+	// Obtener los parámetros de filtrado de la URL
+	year := r.URL.Query().Get("year")
+	if year == "" {
+		year = "2025"
 	}
+	search := r.URL.Query().Get("search")
+	sortField := r.URL.Query().Get("sort")
+	sortDir := r.URL.Query().Get("dir")
+
+	// Obtener datos
 	stocks, err := getStocksFromSQLServer(db.SQLServerDB)
 	if err != nil {
 		http.Error(w, "Error obteniendo stocks", http.StatusInternalServerError)
@@ -359,12 +372,7 @@ func ExportCombinedHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	stocksMap := agruparStocksPorZeta(stocks)
 
-	if db.MySQLDB == nil {
-		http.Error(w, "Conexión a MySQL no inicializada", http.StatusInternalServerError)
-		log.Println("Conexión a MySQL no inicializada")
-		return
-	}
-	saldos, err := getSaldosFromMySQL(db.MySQLDB)
+	saldos, err := getSaldosFromMySQL(db.MySQLDB, year)
 	if err != nil {
 		http.Error(w, "Error obteniendo saldos", http.StatusInternalServerError)
 		log.Println("Error obteniendo saldos:", err)
@@ -372,23 +380,33 @@ func ExportCombinedHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resultados := fusionarDatos(stocksMap, saldos)
-	// Exportar TODOS los datos sin paginar.
-	// Crear archivo Excel y exportar la totalidad de los registros.
+
+	// Aplicar filtros si existen
+	if search != "" || sortField != "" {
+		resultados = filterAndSortResults(resultados, search, sortField, sortDir)
+	}
+
+	// Crear archivo Excel
 	file := xlsx.NewFile()
 	sheet, err := file.AddSheet("Datos Combinados")
 	if err != nil {
 		http.Error(w, "Error al crear el Excel", http.StatusInternalServerError)
-		log.Println("Error al crear hoja en Excel:", err)
 		return
 	}
-	// Encabezados con columnas adicionales
+
+	// Agregar encabezados
 	row := sheet.AddRow()
-	headers := []string{"Código", "Zeta", "Año Producción", "Precio Venta", "Precio Oferta", "Nombre Producto", "Fecha Ingreso", "Costo CIF", "Costo Real", "Cant. Ingresada", "Saldo Anterior", "Días Desde Ingreso"}
+	headers := []string{
+		"Código", "Zeta", "Año Producción", "Precio Venta", "Precio Oferta",
+		"Nombre Producto", "Fecha Ingreso", "Costo CIF", "Costo Real",
+		"Cant. Ingresada", "Saldo Anterior", "Días Desde Ingreso",
+	}
 	for _, h := range headers {
 		cell := row.AddCell()
 		cell.Value = h
 	}
-	// Agregar todos los registros
+
+	// Agregar datos filtrados
 	for _, c := range resultados {
 		row := sheet.AddRow()
 		row.AddCell().Value = c.CodigoProducto
@@ -404,8 +422,20 @@ func ExportCombinedHandler(w http.ResponseWriter, r *http.Request) {
 		row.AddCell().SetFloat(c.SaldoAnterior)
 		row.AddCell().SetInt(c.DiasDesdeIngreso)
 	}
+
+	// Generar nombre del archivo con los filtros aplicados
+	filename := "datos_combinados"
+	if year != "" {
+		filename += "_" + year
+	}
+	if search != "" {
+		filename += "_filtrado"
+	}
+	filename += ".xlsx"
+
+	// Enviar archivo
 	w.Header().Set("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-	w.Header().Set("Content-Disposition", "attachment; filename=datos_combinados.xlsx")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
 	if err := file.Write(w); err != nil {
 		http.Error(w, "Error al generar el Excel", http.StatusInternalServerError)
 		log.Println("Error al escribir el Excel:", err)

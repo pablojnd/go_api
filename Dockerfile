@@ -3,9 +3,10 @@ FROM node:18-alpine AS node-builder
 WORKDIR /app
 COPY package*.json ./
 COPY tailwind.config.js ./
+COPY postcss.config.js ./
 COPY static/css/styles.css ./static/css/
 RUN npm install
-RUN npm run build:css
+RUN npm run build
 
 # Go build stage
 FROM golang:1.21-alpine AS go-builder
