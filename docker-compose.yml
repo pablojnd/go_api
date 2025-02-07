@@ -4,19 +4,20 @@ services:
   app:
     build: .
     ports:
-      - "8081:8080"  # Cambiamos el puerto externo a 3030
+      - "${PORT}:8080"  # Usa la variable PORT del archivo .env
     environment:
-      MYSQL_USER: root
-      MYSQL_PASSWORD: sersoft
-      MYSQL_HOST: 190.171.167.226
-      MYSQL_DATABASE: BDCrispieri2019
-      SQLSERVER_CONNECTION_STRING: "server=190.171.167.226;user id=VENTAS2;password=Sersoft123*;database=BDMCrispieri2"
+      PORT: ${PORT}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_HOST: ${MYSQL_HOST}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      SQLSERVER_CONNECTION_STRING: ${SQLSERVER_CONNECTION_STRING}
     networks:
       - app-network
     volumes:
       - ./static:/app/static
       - ./views:/app/views
-    restart: unless-stopped  # Agregamos reinicio automático
+    restart: unless-stopped
 
 networks:
   app-network:
